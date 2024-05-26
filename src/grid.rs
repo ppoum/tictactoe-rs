@@ -31,6 +31,10 @@ impl CellState {
     pub fn is_empty(&self) -> bool {
         self.0.is_none()
     }
+
+    pub fn try_get_player(&self) -> Option<&Player> {
+        self.0.as_ref()
+    }
 }
 
 #[derive(Default, Debug, Clone, Copy)]
