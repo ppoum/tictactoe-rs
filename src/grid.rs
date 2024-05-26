@@ -15,7 +15,7 @@ impl Display for Player {
     }
 }
 
-#[derive(Default, Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
 pub struct CellState(Option<Player>);
 
 impl Display for CellState {
@@ -60,6 +60,20 @@ impl Grid {
         self.inner.chunks(3)
     }
 
+    pub fn to_cols(&self) -> impl Iterator<Item = [CellState; 3]> {
+        let mut cols = [[Default::default(); 3]; 3];
+        for (r, row) in self.rows().map(|c| c.to_vec()).enumerate() {
+            for (c, cell) in row.into_iter().enumerate() {
+                cols[c][r] = cell;
+            }
+        }
+        cols.into_iter()
+    }
+
+    pub fn is_full(&self) -> bool {
+        !self.inner.iter().any(|c| c.is_empty())
+    }
+
     #[cfg(not(feature = "unicode"))]
     fn fmt_inner(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Horizontal len = Left serparator + 3 * (left pad + cell value + pad + right separator)
@@ -79,5 +93,22 @@ impl Grid {
     #[cfg(feature = "unicode")]
     fn fmt_inner(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         todo!()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn is_full_detects_full_grid() {
+        let mut grid = Grid::default();
+        for r in 0..=2 {
+            for c in 0..=2 {
+                grid.set_cell(r, c, Player::X);
+            }
+        }
+
+        assert!(grid.is_full())
     }
 }

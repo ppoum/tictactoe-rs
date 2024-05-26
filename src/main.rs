@@ -3,14 +3,33 @@ use std::io::{self, BufRead, Write};
 use tictactoe::game::Game;
 
 fn main() {
+    loop {
+        play_game();
+
+        if !read_bool("Do you want to play again [Y/n]? ") {
+            println!("Goodbye!");
+            return;
+        }
+    }
+}
+
+/// Game loop: Plays a game until there's a winner or there's a draw
+fn play_game() {
     let mut game = Game::default();
 
-    loop {
+    while !game.is_filled() {
         println!("--- {}'s turn ---", game.current_player());
         try_move_until_valid(&mut game);
 
         println!("{}", game.grid());
+
+        if let Some(p) = game.find_winner() {
+            println!("Player {} won the game!", p);
+            return;
+        }
     }
+
+    println!("Draw!");
 }
 
 /// Reads from stdin until we receive a number between 1 and 3
@@ -31,7 +50,29 @@ fn read_valid_number(prompt: impl AsRef<str>) -> usize {
             }
         }
 
-        println!("Wrong value");
+        println!("Invalid value");
+        buffer = String::new();
+    }
+}
+
+/// Reads from stdin until we receive a boolean answer
+fn read_bool(prompt: impl AsRef<str>) -> bool {
+    let mut stdin = io::stdin().lock();
+    let mut buffer = String::new();
+    loop {
+        print!("{}", prompt.as_ref());
+        io::stdout().flush().unwrap();
+        stdin
+            .read_line(&mut buffer)
+            .expect("Error reading from stdin");
+
+        match buffer.trim().to_lowercase().as_ref() {
+            "" | "yes" | "y" | "1" => return true,
+            "no" | "n" | "0" => return false,
+            _ => {}
+        }
+
+        println!("Invalid value");
         buffer = String::new();
     }
 }
