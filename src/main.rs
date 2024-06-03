@@ -1,12 +1,10 @@
-use std::io::{self, BufRead, Write};
-
-use tictactoe::{game::Game, player};
+use tictactoe::{game::Game, player, utils};
 
 fn main() {
     loop {
         play_game();
 
-        if !read_bool("Do you want to play again [Y/n]? ") {
+        if !utils::read_bool("Do you want to play again?", false) {
             println!("Goodbye!");
             return;
         }
@@ -35,26 +33,4 @@ fn play_game() {
     }
 
     println!("Draw!");
-}
-
-/// Reads from stdin until we receive a boolean answer
-fn read_bool(prompt: impl AsRef<str>) -> bool {
-    let mut stdin = io::stdin().lock();
-    let mut buffer = String::new();
-    loop {
-        print!("{}", prompt.as_ref());
-        io::stdout().flush().unwrap();
-        stdin
-            .read_line(&mut buffer)
-            .expect("Error reading from stdin");
-
-        match buffer.trim().to_lowercase().as_ref() {
-            "" | "yes" | "y" | "1" => return true,
-            "no" | "n" | "0" => return false,
-            _ => {}
-        }
-
-        println!("Invalid value");
-        buffer = String::new();
-    }
 }
