@@ -1,22 +1,22 @@
 use std::fmt::Display;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum Player {
+pub enum Mark {
     X,
     O,
 }
 
-impl Display for Player {
+impl Display for Mark {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Player::X => write!(f, "X"),
-            Player::O => write!(f, "O"),
+            Mark::X => write!(f, "X"),
+            Mark::O => write!(f, "O"),
         }
     }
 }
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq)]
-pub struct CellState(Option<Player>);
+pub struct CellState(Option<Mark>);
 
 impl Display for CellState {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -32,7 +32,7 @@ impl CellState {
         self.0.is_none()
     }
 
-    pub fn try_get_player(&self) -> Option<&Player> {
+    pub fn try_get_mark(&self) -> Option<&Mark> {
         self.0.as_ref()
     }
 }
@@ -52,8 +52,8 @@ impl Grid {
     pub fn get_cell(&self, row: usize, col: usize) -> &CellState {
         &self.inner[row * 3 + col]
     }
-    pub fn set_cell(&mut self, row: usize, col: usize, player: Player) {
-        self.inner[row * 3 + col] = CellState(Some(player));
+    pub fn set_cell(&mut self, row: usize, col: usize, mark: Mark) {
+        self.inner[row * 3 + col] = CellState(Some(mark));
     }
 
     pub fn rows(&self) -> impl Iterator<Item = &[CellState]> {
@@ -105,7 +105,7 @@ mod tests {
         let mut grid = Grid::default();
         for r in 0..=2 {
             for c in 0..=2 {
-                grid.set_cell(r, c, Player::X);
+                grid.set_cell(r, c, Mark::X);
             }
         }
 
