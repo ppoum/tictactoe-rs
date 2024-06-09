@@ -35,10 +35,10 @@ pub struct Game {
 }
 
 impl Game {
-    pub fn new(player_x: impl Player + 'static, player_o: impl Player + 'static) -> Self {
+    pub fn new(player_x: Box<dyn Player>, player_o: Box<dyn Player>) -> Self {
         Self {
-            player_x: Box::new(player_x),
-            player_o: Box::new(player_o),
+            player_x,
+            player_o,
             grid: Grid::default(),
             is_x_turn: true,
         }
@@ -63,8 +63,8 @@ impl Game {
     }
 
     pub fn try_move(&mut self) -> Result<(), GameError> {
-        let player = self.current_player().player;
-        let (row, col) = player.get_move(self);
+        let game_player = self.current_player();
+        let (row, col) = game_player.player.get_move(self, &game_player.mark);
 
         if !(0..=2).contains(&row) || !(0..=2).contains(&col) {
             return Err(GameError::OutOfBounds);
@@ -158,15 +158,15 @@ mod tests {
 
     fn mock_mock_game() -> Game {
         Game::new(
-            player::tests::MockPlayer::default(),
-            player::tests::MockPlayer::default(),
+            Box::<player::tests::MockPlayer>::default(),
+            Box::<player::tests::MockPlayer>::default(),
         )
     }
 
     #[test]
     fn try_move_rotates_player() {
-        let player_x = player::tests::MockPlayer(0, 0);
-        let player_o = player::tests::MockPlayer(1, 1);
+        let player_x = Box::new(player::tests::MockPlayer(0, 0));
+        let player_o = Box::new(player::tests::MockPlayer(1, 1));
         let mut game = Game::new(player_x, player_o);
 
         let player = game.current_player();
