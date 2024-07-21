@@ -68,7 +68,7 @@ fn prompt_bot_difficulty_selection() -> BotPlayerDifficulty {
     match utils::read_list("Choose a bot difficulty", &diff_options) {
         0 => BotPlayerDifficulty::Easy,
         1 => BotPlayerDifficulty::Normal,
-        2 => todo!(),
+        2 => BotPlayerDifficulty::Impossible,
         _ => unreachable!(),
     }
 }

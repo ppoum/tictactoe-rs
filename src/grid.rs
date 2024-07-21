@@ -82,8 +82,12 @@ impl Grid {
         cols.into_iter()
     }
 
+    pub fn cell_count(&self) -> usize {
+        self.inner.iter().filter(|c| !c.is_empty()).count()
+    }
+
     pub fn is_full(&self) -> bool {
-        !self.inner.iter().any(|c| c.is_empty())
+        self.inner.iter().all(|c| !c.is_empty())
     }
 
     #[cfg(not(feature = "unicode"))]
@@ -93,18 +97,43 @@ impl Grid {
         // Top
         writeln!(f, "{}", side_string)?;
         for row in self.rows() {
-            let test = row
+            let value_line = row
                 .iter()
                 .fold("|".to_owned(), |acc, cell| format!("{acc} {cell} |"));
-            writeln!(f, "{}", test)?;
+            writeln!(f, "{}", value_line)?;
             writeln!(f, "{}", side_string)?;
         }
         Ok(())
     }
 
     #[cfg(feature = "unicode")]
-    fn fmt_inner(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        todo!()
+    fn fmt_inner(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        // Horizontal top line: left corner + 2 * (2x line (padding) + line (value) + down part) +
+        // (3 lines + right corner)
+        let top_line = " \u{250C}".to_owned()
+            + &"\u{2500}\u{2500}\u{2500}\u{252C}".repeat(2)
+            + "\u{2500}\u{2500}\u{2500}\u{2510}";
+
+        // Same, but corners and down part are replaced
+        let middle_line = " \u{251C}".to_owned()
+            + &"\u{2500}\u{2500}\u{2500}\u{253C}".repeat(2)
+            + "\u{2500}\u{2500}\u{2500}\u{2524}";
+        let bottom_line = " \u{2514}".to_owned()
+            + &"\u{2500}\u{2500}\u{2500}\u{2534}".repeat(2)
+            + "\u{2500}\u{2500}\u{2500}\u{2518}";
+        writeln!(f, "{}", top_line)?;
+        for (n, row) in self.rows().enumerate() {
+            let value_line = row.iter().fold(" \u{2502}".to_owned(), |acc, cell| {
+                format!("{acc} {cell} \u{2502}")
+            });
+            writeln!(f, "{}", value_line)?;
+            if n == 2 {
+                writeln!(f, "{}", bottom_line)?;
+            } else {
+                writeln!(f, "{}", middle_line)?;
+            }
+        }
+        Ok(())
     }
 }
 
