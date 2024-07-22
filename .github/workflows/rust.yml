@@ -31,16 +31,8 @@ jobs:
       - name: Run tests (unicode)
         run: cargo test -F unicode --verbose
   build-windows:
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.79
-        with:
-          targets: x86_64-pc-windows-gnu
-          components: clippy, rustfmt
       - name: Build
         run: cargo build --verbose
-      - name: Run tests
-        run: cargo test --verbose
-      - name: Run tests (unicode)
-        run: cargo test -F unicode --verbose

@@ -1,0 +1,52 @@
+name: Publish
+
+on:
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: Publish Linux binaries
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cargo build --release --verbose
+      - name: Upload binary
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: target/release/tictactoe
+          asset_name: tictactoe-linux
+      - name: Build w/ Unicode
+        run: cargo build --release -F unicode --verbose
+      - name: Upload binary w/ Unicode
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: target/release/tictactoe
+          asset_name: tictactoe-unicode-linux
+
+  build-windows:
+    name: Publish Windows binaries
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: cargo build --release --verbose
+      - name: Upload binary
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: target/release/tictactoe.exe
+          asset_name: tictactoe-win64.exe
+      - name: Build w/ Unicode
+        run: cargo build -F unicode --verbose
+      - name: Upload binary w/ Unicode
+        uses: svenstaro/upload-release-action@v2
+        with:
+          file: target/release/tictactoe.exe
+          asset_name: tictactoe-unicode-win64.exe
