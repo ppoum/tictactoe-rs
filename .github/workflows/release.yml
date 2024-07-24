@@ -3,6 +3,8 @@ name: Publish
 on:
   release:
     types: [published]
+env:
+  CARGO_TERM_COLOR: always
 
 jobs:
   build:
@@ -21,12 +23,12 @@ jobs:
           file: target/release/tictactoe
           asset_name: tictactoe-linux
       - name: Build w/ Unicode
-        run: cargo build --release -F unicode --verbose
-      - name: Upload binary w/ Unicode
+        run: cargo build --release --no-default-features --verbose
+      - name: Upload binary (no Unicode)
         uses: svenstaro/upload-release-action@v2
         with:
           file: target/release/tictactoe
-          asset_name: tictactoe-unicode-linux
+          asset_name: tictactoe-ascii-linux
 
   build-windows:
     name: Publish Windows binaries
@@ -44,9 +46,9 @@ jobs:
           file: target/release/tictactoe.exe
           asset_name: tictactoe-win64.exe
       - name: Build w/ Unicode
-        run: cargo build -F unicode --verbose
-      - name: Upload binary w/ Unicode
+        run: cargo build --no-default-features --verbose
+      - name: Upload binary (no Unicode)
         uses: svenstaro/upload-release-action@v2
         with:
           file: target/release/tictactoe.exe
-          asset_name: tictactoe-unicode-win64.exe
+          asset_name: tictactoe-ascii-win64.exe

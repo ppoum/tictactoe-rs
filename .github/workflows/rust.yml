@@ -10,26 +10,22 @@ env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  format:
+  build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - name: rustfmt
         run: cargo fmt --check
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
       - name: Build
         run: cargo build --verbose
       - name: Clippy
         run: cargo clippy --verbose
-      - name: Clippy (unicode)
-        run: cargo clippy -F unicode --verbose
+      - name: Clippy (ASCII)
+        run: cargo clippy --no-default-features --verbose
       - name: Run tests
         run: cargo test --verbose
-      - name: Run tests (unicode)
-        run: cargo test -F unicode --verbose
+      - name: Run tests (ASCII)
+        run: cargo test --no-default-features --verbose
   build-windows:
     runs-on: windows-latest
     steps:
