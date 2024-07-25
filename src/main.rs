@@ -1,12 +1,19 @@
 use tictactoe::{
-    game::Game,
+    game::{Game, RemoteGame},
     player::{self, BotPlayerDifficulty, Player},
-    utils,
 };
 
+mod utils;
+
 fn main() {
+    let game_type = prompt_game_type("What type of game do you wish to play?");
+
     loop {
-        play_game();
+        match game_type {
+            GameType::Local => play_local_game(),
+            GameType::Remote => play_remote_game(),
+            GameType::Host => todo!(),
+        }
 
         if !utils::read_bool("Do you want to play again?", false) {
             println!("Goodbye!");
@@ -15,8 +22,14 @@ fn main() {
     }
 }
 
+enum GameType {
+    Local,
+    Remote,
+    Host,
+}
+
 /// Game loop: Plays a game until there's a winner or there's a draw
-fn play_game() {
+fn play_local_game() {
     let player_x = prompt_player_selection("Select the player type for X");
     let player_y = prompt_player_selection("Select the player type for O");
     let mut game = Game::new(player_x, player_y);
@@ -36,6 +49,28 @@ fn play_game() {
     }
 
     println!("Draw!");
+}
+
+/// Connect to remote server + game loop
+fn play_remote_game() {
+    let _game =
+        RemoteGame::connect("127.0.0.1:8905").expect("Error while connecting to remote server.");
+    todo!()
+}
+
+fn prompt_game_type(prompt: impl AsRef<str>) -> GameType {
+    let options = vec![
+        "Local only",               // 0
+        "Connect to a remote game", // 1
+        "Host a game",              // 2
+    ];
+
+    match utils::read_list(prompt, &options) {
+        0 => GameType::Local,
+        1 => GameType::Remote,
+        2 => GameType::Host,
+        _ => unreachable!(),
+    }
 }
 
 fn prompt_player_selection(prompt: impl AsRef<str>) -> Box<dyn Player> {

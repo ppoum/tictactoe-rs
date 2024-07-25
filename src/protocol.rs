@@ -2,9 +2,11 @@ use std::{error::Error, fmt::Display};
 
 use crate::grid::Mark;
 
+pub const CLIENT_HELLO_PKT_LENGTH: usize = 5;
+
 const HELLO_MAGIC: u32 = 0xFD36_0084;
 const EOG_MAGIC: u32 = 0x5CD9_0094;
-const TERMINATOR: u8 = 0xFF;
+pub const TERMINATOR: u8 = 0xFF;
 
 #[derive(Debug, Clone)]
 pub enum PacketParseError {
@@ -28,7 +30,7 @@ impl TryFrom<&[u8]> for ClientHello {
     type Error = PacketParseError;
 
     fn try_from(value: &[u8]) -> Result<Self, Self::Error> {
-        if value.len() != 4 {
+        if value.len() != CLIENT_HELLO_PKT_LENGTH - 1 {
             return Err(PacketParseError::InvalidSize);
         }
 
@@ -50,8 +52,8 @@ impl ClientHello {
 
 #[derive(Debug, Clone, Copy)]
 pub struct ServerHello {
-    client_first: bool,
-    client_mark: Mark,
+    pub client_first: bool,
+    pub client_mark: Mark,
 }
 impl TryFrom<&[u8]> for ServerHello {
     type Error = PacketParseError;

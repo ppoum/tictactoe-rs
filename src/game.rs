@@ -1,10 +1,15 @@
-use std::fmt::Display;
+use std::{
+    fmt::Display,
+    io::{self, BufRead, BufReader, BufWriter, Write},
+    net::{TcpStream, ToSocketAddrs},
+};
 
 use thiserror::Error;
 
 use crate::{
     grid::{Grid, Mark},
     player::Player,
+    protocol::{self, ClientHello, ServerHello},
 };
 
 #[derive(Error, Debug)]
@@ -141,6 +146,39 @@ impl Game {
                 player: self.player_o.as_ref(),
             },
         }
+    }
+}
+
+pub struct RemoteGame {
+    reader: BufReader<TcpStream>,
+    writer: BufWriter<TcpStream>,
+    grid: Grid,
+    is_local_turn: bool,
+    local_mark: Mark,
+}
+
+impl RemoteGame {
+    pub fn connect<A: ToSocketAddrs>(addr: A) -> io::Result<RemoteGame> {
+        let stream = TcpStream::connect(addr)?;
+
+        let mut reader = BufReader::new(stream.try_clone()?);
+        let mut writer = BufWriter::new(stream);
+        writer.write_all(&ClientHello.to_bytes())?;
+
+        let mut buf = vec![];
+        reader.read_until(protocol::TERMINATOR, &mut buf)?;
+        buf.pop();
+
+        // FIXME: Must handle the Err here
+        let server_hello = ServerHello::try_from(buf.as_slice()).unwrap();
+
+        Ok(Self {
+            reader,
+            writer,
+            grid: Grid::default(),
+            is_local_turn: server_hello.client_first,
+            local_mark: server_hello.client_mark,
+        })
     }
 }
 
