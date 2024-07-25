@@ -39,8 +39,8 @@ impl TryFrom<&[u8]> for ClientHello {
         Ok(Self)
     }
 }
-impl From<ClientHello> for [u8; 5] {
-    fn from(_: ClientHello) -> Self {
+impl ClientHello {
+    pub fn to_bytes(self) -> [u8; 5] {
         let mut pkt = [0_u8; 5];
         pkt[0..4].copy_from_slice(&HELLO_MAGIC.to_be_bytes());
         pkt[4] = TERMINATOR;
@@ -82,17 +82,17 @@ impl TryFrom<&[u8]> for ServerHello {
         })
     }
 }
-impl From<ServerHello> for [u8; 5] {
-    fn from(value: ServerHello) -> Self {
+impl ServerHello {
+    pub fn to_bytes(self) -> [u8; 5] {
         let mut pkt = [0_u8; 5];
         let magic_bytes = HELLO_MAGIC.to_be_bytes();
         pkt[0..4].copy_from_slice(&magic_bytes);
 
         let mut b = magic_bytes[3];
-        if value.client_first {
+        if self.client_first {
             b |= 0b10;
         }
-        if value.client_mark == Mark::X {
+        if self.client_mark == Mark::X {
             b |= 1;
         }
         pkt[3] = b;
@@ -110,10 +110,10 @@ impl From<u8> for PlayerMove {
         Self(row as usize, col as usize)
     }
 }
-impl From<PlayerMove> for [u8; 2] {
-    fn from(value: PlayerMove) -> Self {
+impl PlayerMove {
+    pub fn to_bytes(self) -> [u8; 2] {
         let mut pkt = [0_u8; 2];
-        pkt[0] = (value.0 << 4) as u8 + (value.1 as u8 & 0b1111);
+        pkt[0] = (self.0 << 4) as u8 + (self.1 as u8 & 0b1111);
         pkt[1] = TERMINATOR;
         pkt
     }
@@ -135,8 +135,8 @@ impl TryFrom<&[u8]> for EndOfGame {
         Ok(Self)
     }
 }
-impl From<EndOfGame> for [u8; 5] {
-    fn from(_: EndOfGame) -> Self {
+impl EndOfGame {
+    pub fn to_bytes(self) -> [u8; 5] {
         let mut pkt = [0_u8; 5];
         pkt[0..4].copy_from_slice(&EOG_MAGIC.to_be_bytes());
         pkt[4] = TERMINATOR;
@@ -150,7 +150,7 @@ mod tests {
 
     #[test]
     fn validate_client_hello_pkt_ser_de() {
-        let bytes: [u8; 5] = ClientHello.into();
+        let bytes = ClientHello.to_bytes();
         assert_eq!(bytes[4], TERMINATOR);
         assert!(ClientHello::try_from(&bytes[0..4]).is_ok())
     }
@@ -161,7 +161,7 @@ mod tests {
             client_first: true,
             client_mark: Mark::O,
         };
-        let bytes: [u8; 5] = pkt.into();
+        let bytes = pkt.to_bytes();
 
         assert_eq!(bytes[4], TERMINATOR);
         let deserialized =
@@ -176,7 +176,7 @@ mod tests {
             client_first: false,
             client_mark: Mark::X,
         };
-        let bytes: [u8; 5] = pkt.into();
+        let bytes = pkt.to_bytes();
 
         assert_eq!(bytes[4], TERMINATOR);
         let deserialized =
@@ -188,7 +188,7 @@ mod tests {
     #[test]
     fn validate_player_move_pkt_ser_de() {
         let pkt = PlayerMove(15, 8);
-        let bytes: [u8; 2] = pkt.into();
+        let bytes = pkt.to_bytes();
 
         assert_eq!(bytes[1], TERMINATOR);
 
@@ -199,7 +199,7 @@ mod tests {
 
     #[test]
     fn validate_eog_pkt_ser_de() {
-        let bytes: [u8; 5] = EndOfGame.into();
+        let bytes = EndOfGame.to_bytes();
         assert_eq!(bytes[4], TERMINATOR);
         assert!(EndOfGame::try_from(&bytes[0..4]).is_ok())
     }
