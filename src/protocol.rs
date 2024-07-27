@@ -104,7 +104,7 @@ impl ServerHello {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct PlayerMove(usize, usize);
+pub struct PlayerMove(pub usize, pub usize);
 impl From<u8> for PlayerMove {
     fn from(value: u8) -> Self {
         let row = value >> 4;
@@ -113,6 +113,10 @@ impl From<u8> for PlayerMove {
     }
 }
 impl PlayerMove {
+    pub fn to_tuple(self) -> (usize, usize) {
+        (self.0, self.1)
+    }
+
     pub fn to_bytes(self) -> [u8; 2] {
         let mut pkt = [0_u8; 2];
         pkt[0] = (self.0 << 4) as u8 + (self.1 as u8 & 0b1111);

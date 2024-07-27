@@ -1,6 +1,6 @@
 use tictactoe::{
-    game::{Game, RemoteGame},
-    player::{self, BotPlayerDifficulty, Player},
+    game::{Game, RemoteGame, ServerGame},
+    player::{self, BotPlayerDifficulty, LocalPlayer, Player},
 };
 
 mod utils;
@@ -12,7 +12,7 @@ fn main() {
         match game_type {
             GameType::Local => play_local_game(),
             GameType::Remote => play_remote_game(),
-            GameType::Host => todo!(),
+            GameType::Host => play_hosted_game(),
         }
 
         if !utils::read_bool("Do you want to play again?", false) {
@@ -53,9 +53,75 @@ fn play_local_game() {
 
 /// Connect to remote server + game loop
 fn play_remote_game() {
-    let _game =
+    let mut game =
         RemoteGame::connect("127.0.0.1:8905").expect("Error while connecting to remote server.");
-    todo!()
+    // TODO: Prompt for what type of player?
+    let player = LocalPlayer;
+
+    while !game.grid().is_full() {
+        if game.is_local_turn() {
+            println!("--- {}'s turn ---", game.local_mark());
+            if let Err(e) = game.try_move(&player) {
+                panic!("Error while executing movie: {}", e)
+            }
+        } else {
+            println!("Waiting for remote player to play...");
+            if let Err(e) = game.try_move(&player) {
+                panic!("Error while receiving remote move: {}", e)
+            }
+        }
+
+        println!("{}", game.grid());
+
+        if let Some(p) = game.grid().get_winning_mark() {
+            if p == game.local_mark() {
+                println!("You won the game!");
+            } else {
+                println!("Your opponent won the game.");
+            }
+            return;
+        }
+    }
+
+    println!("Draw!")
+}
+
+/// Host a game + game loop
+fn play_hosted_game() {
+    // TODO: Prompt for what type of player?
+    let player = LocalPlayer;
+    let game =
+        ServerGame::bind("127.0.0.1:8905", &Default::default()).expect("Error binding to socket");
+
+    println!("Waiting for a player to connect.");
+    let mut game = game.listen().expect("Error listening to connections");
+
+    while !game.grid().is_full() {
+        if game.is_local_turn() {
+            println!("--- {}'s turn ---", game.local_mark());
+            if let Err(e) = game.try_move(&player) {
+                panic!("Error while executing movie: {}", e)
+            }
+        } else {
+            println!("Waiting for remote player to play...");
+            if let Err(e) = game.try_move(&player) {
+                panic!("Error while receiving remote move: {}", e)
+            }
+        }
+
+        println!("{}", game.grid());
+
+        if let Some(p) = game.grid().get_winning_mark() {
+            if p == game.local_mark() {
+                println!("You won the game!");
+            } else {
+                println!("Your opponent won the game.");
+            }
+            return;
+        }
+    }
+
+    println!("Draw!")
 }
 
 fn prompt_game_type(prompt: impl AsRef<str>) -> GameType {

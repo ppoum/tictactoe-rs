@@ -125,6 +125,36 @@ impl Grid {
         self.inner.iter().all(|c| !c.is_empty())
     }
 
+    pub fn get_winning_mark(&self) -> Option<Mark> {
+        // Detect row win
+        for row in self.rows() {
+            if !row[0].is_empty() && row.iter().all(|&cell| cell == row[0]) {
+                return row[0].try_get_mark().copied();
+            }
+        }
+
+        // Detect col win
+        for col in self.to_cols() {
+            if !col[0].is_empty() && col.iter().all(|&cell| cell == col[0]) {
+                return col[0].try_get_mark().copied();
+            }
+        }
+
+        // Detect diagonal (\)
+        let first = self.get_cell(0, 0);
+        if !first.is_empty() && first == self.get_cell(1, 1) && first == self.get_cell(2, 2) {
+            return first.try_get_mark().copied();
+        }
+
+        // Detect diagonal (/)
+        let first = self.get_cell(0, 2);
+        if !first.is_empty() && first == self.get_cell(1, 1) && first == self.get_cell(2, 0) {
+            return first.try_get_mark().copied();
+        }
+
+        None
+    }
+
     #[cfg(not(feature = "unicode"))]
     fn fmt_inner(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         // Horizontal len = Left serparator + 3 * (left pad + cell value + pad + right separator)

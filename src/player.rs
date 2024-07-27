@@ -5,10 +5,7 @@ use std::{
 
 use rand::seq::SliceRandom;
 
-use crate::{
-    game::Game,
-    grid::{Grid, Mark},
-};
+use crate::grid::{Grid, Mark};
 
 pub trait Player: Debug {
     // Gets the player's next move. Strategy dependent on player implementation.
