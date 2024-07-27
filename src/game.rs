@@ -4,21 +4,12 @@ use std::{
     net::{TcpStream, ToSocketAddrs},
 };
 
-use thiserror::Error;
-
 use crate::{
     grid::{Grid, Mark},
     player::Player,
     protocol::{self, ClientHello, ServerHello},
 };
 
-#[derive(Error, Debug)]
-pub enum GameError {
-    #[error("Cell is not empty")]
-    UnemptyCell,
-    #[error("Cell is out of bounds")]
-    OutOfBounds,
-}
 
 #[derive(Debug)]
 pub struct GamePlayer<'a> {
@@ -67,20 +58,12 @@ impl Game {
         }
     }
 
-    pub fn try_move(&mut self) -> Result<(), GameError> {
+    pub fn try_move(&mut self) -> Result<(), GridPlacementError> {
         let game_player = self.current_player();
         let (row, col) = game_player.player.get_move(self.grid(), &game_player.mark);
 
-        if !(0..=2).contains(&row) || !(0..=2).contains(&col) {
-            return Err(GameError::OutOfBounds);
-        }
-
-        if !self.grid().get_cell(row, col).is_empty() {
-            return Err(GameError::UnemptyCell);
-        }
-
-        let cell_type = if self.is_x_turn { Mark::X } else { Mark::O };
-        self.grid.set_cell(row, col, cell_type);
+        let mark = if self.is_x_turn { Mark::X } else { Mark::O };
+        self.grid.try_set_cell(row, col, mark)?;
 
         self.is_x_turn = !self.is_x_turn;
         Ok(())

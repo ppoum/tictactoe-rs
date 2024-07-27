@@ -1,4 +1,20 @@
-use std::fmt::Display;
+use std::{error::Error, fmt::Display};
+
+#[derive(Copy, Clone, Debug)]
+pub enum GridPlacementError {
+    CellInUse,
+    OutOfBounds,
+}
+
+impl Display for GridPlacementError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::CellInUse => write!(f, "Cell is not empty"),
+            Self::OutOfBounds => write!(f, "Cell is out of bounds"),
+        }
+    }
+}
+impl Error for GridPlacementError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mark {
@@ -64,8 +80,27 @@ impl Grid {
     pub fn get_cell(&self, row: usize, col: usize) -> &CellState {
         &self.inner[row * 3 + col]
     }
+
     pub fn set_cell(&mut self, row: usize, col: usize, mark: Mark) {
         self.inner[row * 3 + col] = CellState(Some(mark));
+    }
+
+    pub fn try_set_cell(
+        &mut self,
+        row: usize,
+        col: usize,
+        mark: Mark,
+    ) -> Result<(), GridPlacementError> {
+        if !(0..=2).contains(&row) || !(0..=2).contains(&col) {
+            return Err(GridPlacementError::OutOfBounds);
+        }
+
+        if !self.get_cell(row, col).is_empty() {
+            return Err(GridPlacementError::CellInUse);
+        }
+
+        self.inner[row * 3 + col] = CellState(Some(mark));
+        Ok(())
     }
 
     pub fn rows(&self) -> impl Iterator<Item = &[CellState]> {
