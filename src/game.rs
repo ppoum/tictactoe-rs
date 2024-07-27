@@ -69,7 +69,7 @@ impl Game {
 
     pub fn try_move(&mut self) -> Result<(), GameError> {
         let game_player = self.current_player();
-        let (row, col) = game_player.player.get_move(self, &game_player.mark);
+        let (row, col) = game_player.player.get_move(self.grid(), &game_player.mark);
 
         if !(0..=2).contains(&row) || !(0..=2).contains(&col) {
             return Err(GameError::OutOfBounds);
