@@ -1,5 +1,5 @@
 use tictactoe::{
-    game::{Game, RemoteGame, ServerGame},
+    game::{Game, NetworkedGame, RemoteGame, ServerGame},
     player::{self, BotPlayerDifficulty, LocalPlayer, Player},
 };
 
@@ -100,7 +100,7 @@ fn play_hosted_game() {
         if game.is_local_turn() {
             println!("--- {}'s turn ---", game.local_mark());
             if let Err(e) = game.try_move(&player) {
-                panic!("Error while executing movie: {}", e)
+                panic!("Error while executing move: {}", e)
             }
         } else {
             println!("Waiting for remote player to play...");

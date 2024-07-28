@@ -124,8 +124,23 @@ impl From<io::Error> for NetworkedGameError {
     }
 }
 
-// FIXME: `RemoteGame` and `ServerGame` have a lot in common with "regular" game, might want to
-// remove duplication
+pub trait NetworkedGame {
+    fn grid(&self) -> &Grid;
+
+    fn grid_mut(&mut self) -> &mut Grid;
+
+    fn set_next_turn(&mut self);
+
+    fn is_local_turn(&self) -> bool;
+
+    fn local_mark(&self) -> Mark;
+}
+
+trait InternalNetworkBufAccessor {
+    fn reader(&mut self) -> &mut BufReader<TcpStream>;
+    fn writer(&mut self) -> &mut BufWriter<TcpStream>;
+}
+
 #[derive(Debug)]
 pub struct RemoteGame {
     reader: BufReader<TcpStream>,
@@ -133,6 +148,38 @@ pub struct RemoteGame {
     grid: Grid,
     is_local_turn: bool,
     local_mark: Mark,
+}
+
+impl NetworkedGame for RemoteGame {
+    fn grid(&self) -> &Grid {
+        &self.grid
+    }
+
+    fn grid_mut(&mut self) -> &mut Grid {
+        &mut self.grid
+    }
+
+    fn is_local_turn(&self) -> bool {
+        self.is_local_turn
+    }
+
+    fn local_mark(&self) -> Mark {
+        self.local_mark
+    }
+
+    fn set_next_turn(&mut self) {
+        self.is_local_turn = !self.is_local_turn;
+    }
+}
+
+impl InternalNetworkBufAccessor for RemoteGame {
+    fn reader(&mut self) -> &mut BufReader<TcpStream> {
+        &mut self.reader
+    }
+
+    fn writer(&mut self) -> &mut BufWriter<TcpStream> {
+        &mut self.writer
+    }
 }
 
 impl RemoteGame {
@@ -163,50 +210,7 @@ impl RemoteGame {
     /// * If local is playing, asks the user for input
     /// * If remote is playing, get move from connection
     pub fn try_move(&mut self, local_player: &impl Player) -> Result<(), NetworkedGameError> {
-        let (row, col) = if self.is_local_turn {
-            let local_move = local_player.get_move(&self.grid, &self.local_mark);
-
-            // Send move to client
-            let pkt = PlayerMove(local_move.0, local_move.1);
-            self.writer.write_all(&pkt.to_bytes())?;
-            self.writer.flush()?;
-
-            local_move
-        } else {
-            let mut buf = vec![];
-            self.reader.read_until(protocol::TERMINATOR, &mut buf)?;
-
-            // Expect 1 data byte + terminator
-            if buf.len() != 2 {
-                return Err(
-                    io::Error::new(ErrorKind::InvalidData, "PlayerMove packet too long").into(),
-                );
-            }
-
-            PlayerMove::from(buf[0]).to_tuple()
-        };
-
-        let mark = if self.is_local_turn {
-            self.local_mark
-        } else {
-            self.local_mark.opposite()
-        };
-
-        self.grid.try_set_cell(row, col, mark)?;
-        self.is_local_turn = !self.is_local_turn;
-        Ok(())
-    }
-
-    pub fn grid(&self) -> &Grid {
-        &self.grid
-    }
-
-    pub fn is_local_turn(&self) -> bool {
-        self.is_local_turn
-    }
-
-    pub fn local_mark(&self) -> Mark {
-        self.local_mark
+        try_networked_move(self, local_player)
     }
 }
 
@@ -301,55 +305,84 @@ impl ServerGame<NewState> {
     }
 }
 
+impl NetworkedGame for ServerGame<ConnectedState> {
+    fn grid(&self) -> &Grid {
+        &self.grid
+    }
+
+    fn grid_mut(&mut self) -> &mut Grid {
+        &mut self.grid
+    }
+
+    fn is_local_turn(&self) -> bool {
+        self.is_local_turn
+    }
+
+    fn local_mark(&self) -> Mark {
+        self.local_mark
+    }
+
+    fn set_next_turn(&mut self) {
+        self.is_local_turn = !self.is_local_turn;
+    }
+}
+
+impl InternalNetworkBufAccessor for ServerGame<ConnectedState> {
+    fn reader(&mut self) -> &mut BufReader<TcpStream> {
+        &mut self.state.0
+    }
+
+    fn writer(&mut self) -> &mut BufWriter<TcpStream> {
+        &mut self.state.1
+    }
+}
+
 impl ServerGame<ConnectedState> {
     /// * If local is playing, asks the user for input
     /// * If remote is playing, get move from connection
     pub fn try_move(&mut self, local_player: &impl Player) -> Result<(), NetworkedGameError> {
-        let (row, col) = if self.is_local_turn {
-            let local_move = local_player.get_move(&self.grid, &self.local_mark);
+        try_networked_move(self, local_player)
+    }
+}
 
-            // Send move to client
-            let pkt = PlayerMove(local_move.0, local_move.1);
-            self.state.1.write_all(&pkt.to_bytes())?;
-            self.state.1.flush()?;
+fn try_networked_move<G: NetworkedGame + InternalNetworkBufAccessor>(
+    game: &mut G,
+    local_player: &dyn Player,
+) -> Result<(), NetworkedGameError> {
+    // Get move
+    let (row, col) = if game.is_local_turn() {
+        local_player.get_move(game.grid(), &game.local_mark())
+    } else {
+        let mut buf = vec![];
+        game.reader().read_until(protocol::TERMINATOR, &mut buf)?;
 
-            local_move
-        } else {
-            let mut buf = vec![];
-            self.state.0.read_until(protocol::TERMINATOR, &mut buf)?;
+        // Expect 1 data byte + terminator
+        if buf.len() != 2 {
+            return Err(
+                io::Error::new(ErrorKind::InvalidData, "PlayerMove packet too long").into(),
+            );
+        }
 
-            // Expect 1 data byte + terminator
-            if buf.len() != 2 {
-                return Err(
-                    io::Error::new(ErrorKind::InvalidData, "PlayerMove packet too long").into(),
-                );
-            }
+        PlayerMove::from(buf[0]).to_tuple()
+    };
 
-            PlayerMove::from(buf[0]).to_tuple()
-        };
+    // Try applying move
+    let mark = if game.is_local_turn() {
+        game.local_mark()
+    } else {
+        game.local_mark().opposite()
+    };
+    game.grid_mut().try_set_cell(row, col, mark)?;
 
-        let mark = if self.is_local_turn {
-            self.local_mark
-        } else {
-            self.local_mark.opposite()
-        };
-
-        self.grid.try_set_cell(row, col, mark)?;
-        self.is_local_turn = !self.is_local_turn;
-        Ok(())
+    if game.is_local_turn() {
+        // Send move to remote player
+        let pkt = PlayerMove(row, col);
+        game.writer().write_all(&pkt.to_bytes())?;
+        game.writer().flush()?;
     }
 
-    pub fn grid(&self) -> &Grid {
-        &self.grid
-    }
-
-    pub fn is_local_turn(&self) -> bool {
-        self.is_local_turn
-    }
-
-    pub fn local_mark(&self) -> Mark {
-        self.local_mark
-    }
+    game.set_next_turn();
+    Ok(())
 }
 
 #[cfg(test)]
