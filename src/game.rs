@@ -195,8 +195,12 @@ impl RemoteGame {
         reader.read_until(protocol::TERMINATOR, &mut buf)?;
         buf.pop();
 
-        // FIXME: Must handle the Err here
-        let server_hello = ServerHello::try_from(buf.as_slice()).unwrap();
+        let server_hello = ServerHello::try_from(buf.as_slice()).map_err(|_| {
+            io::Error::new(
+                ErrorKind::InvalidData,
+                "Received malformed SERVER_HELLO packet",
+            )
+        })?;
 
         Ok(Self {
             reader,
