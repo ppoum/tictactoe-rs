@@ -34,7 +34,7 @@ fn play_local_game() {
     let player_y = prompt_player_selection("Select the player type for O");
     let mut game = Game::new(player_x, player_y);
 
-    while !game.is_filled() {
+    while !game.grid().is_full() {
         println!("--- {}'s turn ---", game.current_player());
         if let Err(e) = game.try_move() {
             panic!("Error while executing move: {}", e);

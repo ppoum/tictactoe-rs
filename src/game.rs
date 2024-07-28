@@ -77,11 +77,6 @@ impl Game {
             .map(|m| self.mark_to_game_player(&m))
     }
 
-    /// Returns true if the grid is full
-    pub fn is_filled(&self) -> bool {
-        self.grid.is_full()
-    }
-
     fn mark_to_game_player(&self, mark: &Mark) -> GamePlayer {
         match mark {
             Mark::X => GamePlayer {
