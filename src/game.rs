@@ -208,7 +208,7 @@ impl RemoteGame {
 
     /// * If local is playing, asks the user for input
     /// * If remote is playing, get move from connection
-    pub fn try_move(&mut self, local_player: &impl Player) -> Result<(), NetworkedGameError> {
+    pub fn try_move(&mut self, local_player: &dyn Player) -> Result<(), NetworkedGameError> {
         try_networked_move(self, local_player)
     }
 }
@@ -339,7 +339,7 @@ impl InternalNetworkBufAccessor for ServerGame<ConnectedState> {
 impl ServerGame<ConnectedState> {
     /// * If local is playing, asks the user for input
     /// * If remote is playing, get move from connection
-    pub fn try_move(&mut self, local_player: &impl Player) -> Result<(), NetworkedGameError> {
+    pub fn try_move(&mut self, local_player: &dyn Player) -> Result<(), NetworkedGameError> {
         try_networked_move(self, local_player)
     }
 }
