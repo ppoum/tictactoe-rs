@@ -57,33 +57,7 @@ fn play_remote_game() {
     let mut game = RemoteGame::connect(addr).expect("Error while connecting to remote server.");
     // TODO: Prompt for what type of player?
     let player = LocalPlayer;
-
-    while !game.grid().is_full() {
-        if game.is_local_turn() {
-            println!("--- {}'s turn ---", game.local_mark());
-            if let Err(e) = game.try_move(&player) {
-                panic!("Error while executing movie: {}", e)
-            }
-        } else {
-            println!("Waiting for remote player to play...");
-            if let Err(e) = game.try_move(&player) {
-                panic!("Error while receiving remote move: {}", e)
-            }
-        }
-
-        println!("{}", game.grid());
-
-        if let Some(p) = game.grid().get_winning_mark() {
-            if p == game.local_mark() {
-                println!("You won the game!");
-            } else {
-                println!("Your opponent won the game.");
-            }
-            return;
-        }
-    }
-
-    println!("Draw!")
+    networked_game_loop(&mut game, &player)
 }
 
 /// Host a game + game loop
@@ -96,16 +70,19 @@ fn play_hosted_game() {
 
     println!("Waiting for a player to connect.");
     let mut game = game.listen().expect("Error listening to connections");
+    networked_game_loop(&mut game, &player);
+}
 
+fn networked_game_loop(game: &mut impl NetworkedGame, local_player: &dyn Player) {
     while !game.grid().is_full() {
         if game.is_local_turn() {
             println!("--- {}'s turn ---", game.local_mark());
-            if let Err(e) = game.try_move(&player) {
+            if let Err(e) = game.try_move(local_player) {
                 panic!("Error while executing move: {}", e)
             }
         } else {
             println!("Waiting for remote player to play...");
-            if let Err(e) = game.try_move(&player) {
+            if let Err(e) = game.try_move(local_player) {
                 panic!("Error while receiving remote move: {}", e)
             }
         }
@@ -121,7 +98,6 @@ fn play_hosted_game() {
             return;
         }
     }
-
     println!("Draw!")
 }
 

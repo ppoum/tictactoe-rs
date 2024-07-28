@@ -129,6 +129,8 @@ pub trait NetworkedGame {
     fn is_local_turn(&self) -> bool;
 
     fn local_mark(&self) -> Mark;
+
+    fn try_move(&mut self, player: &dyn Player) -> Result<(), NetworkedGameError>;
 }
 
 trait InternalNetworkBufAccessor {
@@ -154,6 +156,10 @@ impl NetworkedGame for RemoteGame {
         &mut self.grid
     }
 
+    fn set_next_turn(&mut self) {
+        self.is_local_turn = !self.is_local_turn;
+    }
+
     fn is_local_turn(&self) -> bool {
         self.is_local_turn
     }
@@ -162,8 +168,8 @@ impl NetworkedGame for RemoteGame {
         self.local_mark
     }
 
-    fn set_next_turn(&mut self) {
-        self.is_local_turn = !self.is_local_turn;
+    fn try_move(&mut self, player: &dyn Player) -> Result<(), NetworkedGameError> {
+        try_networked_move(self, player)
     }
 }
 
@@ -204,12 +210,6 @@ impl RemoteGame {
             is_local_turn: server_hello.client_first,
             local_mark: server_hello.client_mark,
         })
-    }
-
-    /// * If local is playing, asks the user for input
-    /// * If remote is playing, get move from connection
-    pub fn try_move(&mut self, local_player: &dyn Player) -> Result<(), NetworkedGameError> {
-        try_networked_move(self, local_player)
     }
 }
 
@@ -313,6 +313,10 @@ impl NetworkedGame for ServerGame<ConnectedState> {
         &mut self.grid
     }
 
+    fn set_next_turn(&mut self) {
+        self.is_local_turn = !self.is_local_turn;
+    }
+
     fn is_local_turn(&self) -> bool {
         self.is_local_turn
     }
@@ -321,8 +325,8 @@ impl NetworkedGame for ServerGame<ConnectedState> {
         self.local_mark
     }
 
-    fn set_next_turn(&mut self) {
-        self.is_local_turn = !self.is_local_turn;
+    fn try_move(&mut self, player: &dyn Player) -> Result<(), NetworkedGameError> {
+        try_networked_move(self, player)
     }
 }
 
@@ -333,14 +337,6 @@ impl InternalNetworkBufAccessor for ServerGame<ConnectedState> {
 
     fn writer(&mut self) -> &mut BufWriter<TcpStream> {
         &mut self.state.1
-    }
-}
-
-impl ServerGame<ConnectedState> {
-    /// * If local is playing, asks the user for input
-    /// * If remote is playing, get move from connection
-    pub fn try_move(&mut self, local_player: &dyn Player) -> Result<(), NetworkedGameError> {
-        try_networked_move(self, local_player)
     }
 }
 
