@@ -1,5 +1,24 @@
 use std::io::{self, BufRead, Write};
 
+/// Reads one line from stdin, and returns the read value, or `default` if no value was entered.
+/// Prompt format: "{Prompt} ({Default}):
+pub fn read_string_default(prompt: impl AsRef<str>, default: impl ToString) -> String {
+    let default = default.to_string();
+    let mut stdin = io::stdin().lock();
+    let mut buf = String::new();
+
+    print!("{} ({}): ", prompt.as_ref(), default);
+    io::stdout().flush().unwrap();
+    stdin.read_line(&mut buf).expect("Error reading from stdin");
+    let buf = buf.trim();
+
+    if buf.is_empty() {
+        default
+    } else {
+        buf.to_owned()
+    }
+}
+
 /// Reads from stdin until we receive a boolean answer. Appends either `[Y/n]` or `[y/N]` to the
 /// prompt based on the value of the `default` argument.
 pub fn read_bool(prompt: impl AsRef<str>, default: bool) -> bool {

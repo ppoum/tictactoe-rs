@@ -53,8 +53,8 @@ fn play_local_game() {
 
 /// Connect to remote server + game loop
 fn play_remote_game() {
-    let mut game =
-        RemoteGame::connect("127.0.0.1:8905").expect("Error while connecting to remote server.");
+    let addr = utils::read_string_default("Server address", "127.0.0.1:8905");
+    let mut game = RemoteGame::connect(addr).expect("Error while connecting to remote server.");
     // TODO: Prompt for what type of player?
     let player = LocalPlayer;
 
@@ -90,8 +90,9 @@ fn play_remote_game() {
 fn play_hosted_game() {
     // TODO: Prompt for what type of player?
     let player = LocalPlayer;
-    let game =
-        ServerGame::bind("127.0.0.1:8905", &Default::default()).expect("Error binding to socket");
+
+    let addr = utils::read_string_default("Bind on address", "0.0.0.0:8905");
+    let game = ServerGame::bind(addr, &Default::default()).expect("Error binding to socket");
 
     println!("Waiting for a player to connect.");
     let mut game = game.listen().expect("Error listening to connections");
