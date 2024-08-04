@@ -15,7 +15,12 @@ fn main() {
             GameType::Host => play_hosted_game(),
         }
 
-        if !utils::read_bool("Do you want to play again?", false) {
+        if matches!(game_type, GameType::Local) {
+            if !utils::read_bool("Do you want to play again?", false) {
+                println!("Goodbye!");
+                return;
+            }
+        } else {
             println!("Goodbye!");
             return;
         }
@@ -55,14 +60,12 @@ fn play_local_game() {
 fn play_remote_game() {
     let addr = utils::read_string_default("Server address", "127.0.0.1:8905");
     let mut game = RemoteGame::connect(addr).expect("Error while connecting to remote server.");
-    // TODO: Prompt for what type of player?
     let player = LocalPlayer;
     networked_game_loop(&mut game, &player)
 }
 
 /// Host a game + game loop
 fn play_hosted_game() {
-    // TODO: Prompt for what type of player?
     let player = LocalPlayer;
 
     let addr = utils::read_string_default("Bind on address", "0.0.0.0:8905");
