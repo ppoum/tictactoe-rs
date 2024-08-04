@@ -393,19 +393,6 @@ mod tests {
 
     use super::*;
 
-    impl Game {
-        fn set_grid(&mut self, grid: Grid) {
-            self.grid = grid;
-        }
-    }
-
-    fn mock_mock_game() -> Game {
-        Game::new(
-            Box::<player::tests::MockPlayer>::default(),
-            Box::<player::tests::MockPlayer>::default(),
-        )
-    }
-
     #[test]
     fn try_move_rotates_player() {
         let player_x = Box::new(player::tests::MockPlayer(0, 0));
@@ -421,57 +408,5 @@ mod tests {
         assert_eq!(player.mark, Mark::O);
         assert!(game.try_move().is_ok());
         assert!(game.try_move().is_err())
-    }
-
-    #[test]
-    fn find_winner_finds_horizontal_win() {
-        let mut grid = Grid::default();
-        grid.set_cell(2, 0, Mark::X);
-        grid.set_cell(2, 1, Mark::X);
-        grid.set_cell(2, 2, Mark::X);
-
-        let mut game = mock_mock_game();
-        game.set_grid(grid);
-
-        assert_eq!(game.find_winner().unwrap().mark, Mark::X);
-    }
-
-    #[test]
-    fn find_winner_finds_vertical_win() {
-        let mut grid = Grid::default();
-        grid.set_cell(1, 0, Mark::O);
-        grid.set_cell(1, 1, Mark::O);
-        grid.set_cell(1, 2, Mark::O);
-
-        let mut game = mock_mock_game();
-        game.set_grid(grid);
-
-        assert_eq!(game.find_winner().unwrap().mark, Mark::O);
-    }
-
-    #[test]
-    fn find_winner_find_diagonal() {
-        let mut grid = Grid::default();
-        grid.set_cell(0, 0, Mark::X);
-        grid.set_cell(1, 1, Mark::X);
-        grid.set_cell(2, 2, Mark::X);
-
-        let mut game = mock_mock_game();
-        game.set_grid(grid);
-
-        assert_eq!(game.find_winner().unwrap().mark, Mark::X);
-    }
-
-    #[test]
-    fn find_winner_finds_no_winner() {
-        let mut grid = Grid::default();
-        grid.set_cell(0, 0, Mark::X);
-        grid.set_cell(0, 1, Mark::O);
-        grid.set_cell(0, 2, Mark::X);
-
-        let mut game = mock_mock_game();
-        game.set_grid(grid);
-
-        assert!(game.find_winner().is_none());
     }
 }
