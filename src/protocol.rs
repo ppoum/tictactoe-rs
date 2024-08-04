@@ -162,6 +162,24 @@ mod tests {
     }
 
     #[test]
+    fn fail_invalid_len_client_hello_pkt() {
+        let bytes = [0; 6];
+        assert!(matches!(
+            ClientHello::try_from(bytes.as_slice()),
+            Err(PacketParseError::InvalidSize)
+        ))
+    }
+
+    #[test]
+    fn fail_invalid_magic_client_hello_pkt() {
+        let bytes = [0; 4];
+        assert!(matches!(
+            ClientHello::try_from(bytes.as_slice()),
+            Err(PacketParseError::InvalidMagic)
+        ))
+    }
+
+    #[test]
     fn validate_server_hello_pkt_ser_de_1() {
         let pkt = ServerHello {
             client_first: true,
@@ -192,6 +210,24 @@ mod tests {
     }
 
     #[test]
+    fn fail_invalid_len_server_hello_pkt() {
+        let bytes = [0; 6];
+        assert!(matches!(
+            ServerHello::try_from(bytes.as_slice()),
+            Err(PacketParseError::InvalidSize)
+        ))
+    }
+
+    #[test]
+    fn fail_invalid_magic_server_hello_pkt() {
+        let bytes = [0; 4];
+        assert!(matches!(
+            ServerHello::try_from(bytes.as_slice()),
+            Err(PacketParseError::InvalidMagic)
+        ))
+    }
+
+    #[test]
     fn validate_player_move_pkt_ser_de() {
         let pkt = PlayerMove(15, 8);
         let bytes = pkt.to_bytes();
@@ -208,5 +244,22 @@ mod tests {
         let bytes = EndOfGame.to_bytes();
         assert_eq!(bytes[4], TERMINATOR);
         assert!(EndOfGame::try_from(&bytes[0..4]).is_ok())
+    }
+
+    #[test]
+    fn fail_invalid_len_eog_pkt() {
+        let bytes = [0; 6];
+        assert!(matches!(
+            EndOfGame::try_from(bytes.as_slice()),
+            Err(PacketParseError::InvalidSize)
+        ))
+    }
+    #[test]
+    fn fail_invalid_magic_eog_pkt() {
+        let bytes = [0; 4];
+        assert!(matches!(
+            EndOfGame::try_from(bytes.as_slice()),
+            Err(PacketParseError::InvalidMagic)
+        ))
     }
 }
