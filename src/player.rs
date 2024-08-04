@@ -5,14 +5,11 @@ use std::{
 
 use rand::seq::SliceRandom;
 
-use crate::{
-    game::Game,
-    grid::{Grid, Mark},
-};
+use crate::grid::{Grid, Mark};
 
 pub trait Player: Debug {
     // Gets the player's next move. Strategy dependent on player implementation.
-    fn get_move(&self, game: &Game, mark: &Mark) -> (usize, usize);
+    fn get_move(&self, grid: &Grid, mark: &Mark) -> (usize, usize);
 }
 
 #[derive(Debug, Copy, Clone)]
@@ -45,12 +42,12 @@ impl LocalPlayer {
 
 impl Player for LocalPlayer {
     /// Asks the player to enter their next move.
-    fn get_move(&self, game: &Game, _: &Mark) -> (usize, usize) {
+    fn get_move(&self, grid: &Grid, _: &Mark) -> (usize, usize) {
         loop {
             let row = self.stdin_read_valid_number("Select a row") - 1;
             let col = self.stdin_read_valid_number("Select a column") - 1;
 
-            if !game.grid().get_cell(row, col).is_empty() {
+            if !grid.get_cell(row, col).is_empty() {
                 println!("Invalid cell, already in use");
             } else {
                 return (row, col);
@@ -324,8 +321,7 @@ impl BotPlayer {
 }
 
 impl Player for BotPlayer {
-    fn get_move(&self, game: &Game, mark: &Mark) -> (usize, usize) {
-        let grid = game.grid();
+    fn get_move(&self, grid: &Grid, mark: &Mark) -> (usize, usize) {
         match self.0 {
             // Strategy: randomly choose a free cell
             BotPlayerDifficulty::Easy => BotPlayer::random_move(grid),
@@ -357,7 +353,7 @@ pub mod tests {
     }
 
     impl Player for MockPlayer {
-        fn get_move(&self, _: &Game, _: &Mark) -> (usize, usize) {
+        fn get_move(&self, _: &Grid, _: &Mark) -> (usize, usize) {
             (self.0, self.1)
         }
     }

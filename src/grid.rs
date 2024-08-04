@@ -1,4 +1,20 @@
-use std::fmt::Display;
+use std::{error::Error, fmt::Display};
+
+#[derive(Copy, Clone, Debug)]
+pub enum GridPlacementError {
+    CellInUse,
+    OutOfBounds,
+}
+
+impl Display for GridPlacementError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::CellInUse => write!(f, "Cell is not empty"),
+            Self::OutOfBounds => write!(f, "Cell is out of bounds"),
+        }
+    }
+}
+impl Error for GridPlacementError {}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Mark {
@@ -64,8 +80,27 @@ impl Grid {
     pub fn get_cell(&self, row: usize, col: usize) -> &CellState {
         &self.inner[row * 3 + col]
     }
+
     pub fn set_cell(&mut self, row: usize, col: usize, mark: Mark) {
         self.inner[row * 3 + col] = CellState(Some(mark));
+    }
+
+    pub fn try_set_cell(
+        &mut self,
+        row: usize,
+        col: usize,
+        mark: Mark,
+    ) -> Result<(), GridPlacementError> {
+        if !(0..=2).contains(&row) || !(0..=2).contains(&col) {
+            return Err(GridPlacementError::OutOfBounds);
+        }
+
+        if !self.get_cell(row, col).is_empty() {
+            return Err(GridPlacementError::CellInUse);
+        }
+
+        self.inner[row * 3 + col] = CellState(Some(mark));
+        Ok(())
     }
 
     pub fn rows(&self) -> impl Iterator<Item = &[CellState]> {
@@ -88,6 +123,36 @@ impl Grid {
 
     pub fn is_full(&self) -> bool {
         self.inner.iter().all(|c| !c.is_empty())
+    }
+
+    pub fn get_winning_mark(&self) -> Option<Mark> {
+        // Detect row win
+        for row in self.rows() {
+            if !row[0].is_empty() && row.iter().all(|&cell| cell == row[0]) {
+                return row[0].try_get_mark().copied();
+            }
+        }
+
+        // Detect col win
+        for col in self.to_cols() {
+            if !col[0].is_empty() && col.iter().all(|&cell| cell == col[0]) {
+                return col[0].try_get_mark().copied();
+            }
+        }
+
+        // Detect diagonal (\)
+        let first = self.get_cell(0, 0);
+        if !first.is_empty() && first == self.get_cell(1, 1) && first == self.get_cell(2, 2) {
+            return first.try_get_mark().copied();
+        }
+
+        // Detect diagonal (/)
+        let first = self.get_cell(0, 2);
+        if !first.is_empty() && first == self.get_cell(1, 1) && first == self.get_cell(2, 0) {
+            return first.try_get_mark().copied();
+        }
+
+        None
     }
 
     #[cfg(not(feature = "unicode"))]
@@ -151,5 +216,54 @@ mod tests {
         }
 
         assert!(grid.is_full())
+    }
+
+    #[test]
+    fn find_winner_finds_horizontal_win() {
+        for row in 0..=2 {
+            let mut grid = Grid::default();
+            grid.set_cell(row, 0, Mark::X);
+            grid.set_cell(row, 1, Mark::X);
+            grid.set_cell(row, 2, Mark::X);
+
+            assert_eq!(grid.get_winning_mark(), Some(Mark::X));
+        }
+    }
+
+    #[test]
+    fn find_winner_finds_vertical_win() {
+        for col in 0..=2 {
+            let mut grid = Grid::default();
+            grid.set_cell(0, col, Mark::O);
+            grid.set_cell(1, col, Mark::O);
+            grid.set_cell(2, col, Mark::O);
+
+            assert_eq!(grid.get_winning_mark(), Some(Mark::O));
+        }
+    }
+
+    #[test]
+    fn find_winner_find_diagonal() {
+        let mut grid = Grid::default();
+        grid.set_cell(0, 0, Mark::X);
+        grid.set_cell(1, 1, Mark::X);
+        grid.set_cell(2, 2, Mark::X);
+        assert_eq!(grid.get_winning_mark(), Some(Mark::X));
+
+        let mut grid = Grid::default();
+        grid.set_cell(0, 2, Mark::X);
+        grid.set_cell(1, 1, Mark::X);
+        grid.set_cell(2, 0, Mark::X);
+        assert_eq!(grid.get_winning_mark(), Some(Mark::X));
+    }
+
+    #[test]
+    fn find_winner_finds_no_winner() {
+        let mut grid = Grid::default();
+        grid.set_cell(0, 0, Mark::X);
+        grid.set_cell(0, 1, Mark::O);
+        grid.set_cell(0, 2, Mark::X);
+
+        assert!(grid.get_winning_mark().is_none())
     }
 }
