@@ -8,7 +8,7 @@ use std::{
 use crate::{
     grid::{Grid, GridPlacementError, Mark},
     player::Player,
-    protocol::{self, ClientHello, PlayerMove, ServerHello},
+    protocol::{self, ClientHello, EndOfGame, PlayerMove, ServerHello},
 };
 
 use self::seal::ServerGameState;
@@ -353,6 +353,13 @@ fn try_networked_move<G: NetworkedGame + InternalNetworkBufAccessor>(
 
         // Expect 1 data byte + terminator
         if buf.len() != 2 {
+            if EndOfGame::try_from(buf.as_slice()).is_ok() {
+                return Err(io::Error::new(
+                    ErrorKind::UnexpectedEof,
+                    "received unexpected end of game packet",
+                )
+                .into());
+            }
             return Err(
                 io::Error::new(ErrorKind::InvalidData, "PlayerMove packet too long").into(),
             );
